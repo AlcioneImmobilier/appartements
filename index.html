@@ -3,380 +3,1073 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Biens à vendre à Paris</title>
+<title>ALCIONE · EPONA — Quatorze adresses parisiennes</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=Jost:wght@200;300;400&display=swap" rel="stylesheet">
 <style>
-/* Plan : pierre de Paris et zinc des toits. Mise en page : sommaire en cartes, puis une fiche pleine largeur par bien. */
+/* ============================================================
+   DIRECTION ARTISTIQUE
+   Fond blanc cassé · texte anthracite · un seul accent champagne.
+   Teintes de statut sourdes. Filets 1px, aucune ombre portée.
+   ============================================================ */
 :root{
-  --bg:#f3f1ed; --surface:#ffffff; --ink:#1c2630; --muted:#5d6874; --line:#d9d6cf;
-  --zinc:#2f4658; --zinc-soft:#e3e9ee; --brass:#9a7a3d; --todo-bg:#fff6dc; --todo-ink:#7a5a00; --todo-line:#d6a82c;
-  --ph-a:#e6e3dc; --ph-b:#ddd9d0; --on-zinc:#fff;
-  --font-display:"Newsreader", Georgia, "Times New Roman", serif;
-  --font-body:"Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
+  --paper:#FAF8F5;
+  --paper-2:#F4F1EC;
+  --ink:#1C1B19;
+  --ink-60:rgba(28,27,25,.60);
+  --ink-40:rgba(28,27,25,.40);
+  --ink-22:rgba(28,27,25,.22);
+  --rule:rgba(28,27,25,.14);
+  --rule-soft:rgba(28,27,25,.08);
+  --gold:#A8905F;
+
+  --s-vente:#A8905F;      /* champagne  — en cours de vente */
+  --s-travaux:#7D6A55;    /* bronze     — en travaux */
+  --s-vendu:#B3B0A9;      /* gris perle — vendu */
+  --s-acq:#2E3A4A;        /* bleu nuit  — en cours d'acquisition */
+
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --t:460ms;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#12181e; --surface:#1a232b; --ink:#e9ecef; --muted:#a2adb7; --line:#2d3945;
-    --zinc:#8fb0c9; --zinc-soft:#22313d; --brass:#c9a561; --todo-bg:#33290e; --todo-ink:#f0cf7a; --todo-line:#a98621;
-    --ph-a:#222d36; --ph-b:#1d2730; --on-zinc:#0e151b; color-scheme: dark;
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Jost',system-ui,sans-serif;
+  font-weight:300;
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+
+h1,h2,h3,.serif{
+  font-family:'Cormorant Garamond',Georgia,serif;
+  font-weight:300;
+  letter-spacing:.005em;
+}
+
+/* Petites capitales très espacées : labels, statuts, liens */
+.sc{
+  font-family:'Jost',sans-serif;
+  font-weight:400;
+  font-size:10.5px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+}
+
+.rule{height:1px;background:var(--rule);border:0;margin:0}
+
+/* ===================== EN-TÊTE ===================== */
+.masthead{
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  padding:26px 32px 20px;
+  display:flex;align-items:baseline;gap:22px;
+  background:linear-gradient(to bottom,var(--paper) 55%,rgba(250,248,245,0));
+  pointer-events:none;
+}
+.masthead > *{pointer-events:auto}
+.wordmark{
+  font-family:'Jost',sans-serif;font-weight:300;
+  font-size:12.5px;letter-spacing:.42em;text-transform:uppercase;
+  white-space:nowrap;
+}
+.wordmark .sep{color:var(--ink-40);margin:0 .5em}
+.tagline{
+  font-family:'Cormorant Garamond',serif;font-weight:300;font-style:italic;
+  font-size:15px;color:var(--ink-60);
+  margin-left:auto;white-space:nowrap;
+}
+
+/* ===================== VUE CARTE ===================== */
+#vue-carte{position:fixed;inset:0;overflow:hidden}
+#plan{position:absolute;inset:0;touch-action:none;cursor:grab}
+#plan.dragging{cursor:grabbing}
+#plan svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+
+.geo-ville{fill:none;stroke:var(--ink);stroke-width:.75;opacity:.11;stroke-linejoin:round}
+.geo-seine{fill:none;stroke:var(--ink);stroke-width:1.4;opacity:.16;stroke-linecap:round}
+.geo-limite{
+  fill:none;stroke:var(--ink);stroke-width:.7;opacity:.14;
+  stroke-dasharray:1.5 4;stroke-linecap:round;stroke-linejoin:round;
+}
+.geo-arr{
+  font-family:'Jost',sans-serif;font-weight:400;font-size:9.5px;
+  letter-spacing:.14em;fill:var(--ink);opacity:.3;
+  text-anchor:middle;user-select:none;
+}
+
+/* --- pastilles --- */
+.pin{
+  position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;
+  border:0;display:grid;place-items:center;z-index:5;
+}
+.pin .dot{
+  width:11px;height:11px;border-radius:50%;
+  background:var(--c);
+  box-shadow:0 0 0 1px var(--paper), 0 0 0 1.9px var(--c-ring);
+  transition:transform var(--t) var(--ease);
+}
+.pin[data-statut="vendu"] .dot{width:9px;height:9px}
+.pin:hover .dot,.pin.actif .dot{transform:scale(1.5)}
+.pin .halo{
+  position:absolute;width:11px;height:11px;border-radius:50%;
+  border:1px solid var(--c);opacity:0;pointer-events:none;
+}
+.pin[data-statut="vente"] .halo{animation:respire 3600ms var(--ease) infinite}
+@keyframes respire{
+  0%{transform:scale(1);opacity:.5}
+  70%{transform:scale(3.4);opacity:0}
+  100%{transform:scale(3.4);opacity:0}
+}
+.pin.masque{opacity:.12;pointer-events:none;transition:opacity var(--t) var(--ease)}
+.pin{transition:opacity var(--t) var(--ease)}
+
+/* --- carte flottante --- */
+#survol{
+  position:fixed;z-index:30;width:272px;
+  background:rgba(250,248,245,.82);
+  backdrop-filter:blur(18px) saturate(1.1);
+  -webkit-backdrop-filter:blur(18px) saturate(1.1);
+  border:1px solid var(--rule);
+  opacity:0;transform:translateY(5px);
+  transition:opacity 320ms var(--ease),transform 320ms var(--ease);
+  pointer-events:none;
+}
+#survol.on{opacity:1;transform:translateY(0)}
+#survol .vignette{aspect-ratio:4/3;background:var(--paper-2);overflow:hidden}
+#survol .vignette img{width:100%;height:100%;object-fit:cover}
+#survol .corps{padding:14px 16px 16px}
+#survol .statut{display:block;margin-bottom:8px}
+#survol .adr{font-family:'Cormorant Garamond',serif;font-size:19px;line-height:1.25;margin:0 0 2px}
+#survol .arr{font-size:12.5px;color:var(--ink-60);letter-spacing:.04em}
+#survol .meta{margin-top:10px;padding-top:9px;border-top:1px solid var(--rule-soft);font-size:12.5px;color:var(--ink-60);display:flex;gap:14px;flex-wrap:wrap}
+#survol .prix{color:var(--ink)}
+#survol .evt{margin-top:9px;font-size:11.5px;color:var(--gold);letter-spacing:.03em}
+
+/* --- filtres --- */
+#filtres{
+  position:fixed;z-index:35;left:32px;bottom:30px;
+  display:flex;flex-direction:column;gap:9px;align-items:flex-start;
+}
+#filtres .f{
+  display:flex;align-items:baseline;gap:9px;
+  color:var(--ink-60);padding-bottom:3px;
+  border-bottom:1px solid transparent;
+  transition:color var(--t) var(--ease),border-color var(--t) var(--ease);
+}
+#filtres .f:hover{color:var(--ink)}
+#filtres .f.on{color:var(--ink);border-bottom-color:var(--gold)}
+#filtres .f .n{font-size:10px;letter-spacing:.1em;color:var(--ink-40);font-variant-numeric:tabular-nums}
+#filtres .f .tin{width:6px;height:6px;border-radius:50%;background:var(--c);flex:none;transform:translateY(-1px)}
+
+#zoomhint{
+  position:fixed;z-index:35;right:32px;bottom:30px;
+  color:var(--ink-40);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;
+}
+
+/* ===================== FICHE ===================== */
+#vue-fiche{
+  position:fixed;inset:0;z-index:50;overflow-y:auto;overscroll-behavior:contain;
+  background:var(--paper);
+  opacity:0;visibility:hidden;transform:translateY(14px);
+  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease),visibility var(--t);
+}
+#vue-fiche.on{opacity:1;visibility:visible;transform:none}
+body.fiche #vue-carte{opacity:.25;transition:opacity var(--t) var(--ease)}
+#vue-carte{transition:opacity var(--t) var(--ease)}
+
+.hero{position:relative;height:78vh;min-height:420px;overflow:hidden;background:var(--paper-2)}
+.hero img{width:100%;height:100%;object-fit:cover;animation:kenburns 26s var(--ease) both}
+@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.07)}}
+.hero .retour{
+  position:absolute;top:26px;left:32px;z-index:3;
+  color:var(--ink);background:rgba(250,248,245,.78);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  padding:9px 15px;border:1px solid var(--rule);
+}
+.hero .retour:hover{color:var(--gold)}
+
+/* plaque « visuel à venir » */
+.plaque{
+  width:100%;height:100%;display:grid;place-items:center;
+  background:
+    linear-gradient(135deg,rgba(28,27,25,.012) 0 50%,transparent 50%),
+    var(--paper-2);
+  border:1px solid var(--rule-soft);
+}
+.plaque span{color:var(--ink-40);font-size:9.5px;letter-spacing:.26em;text-transform:uppercase}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+
+.titre-bloc{padding:68px 0 0;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:end}
+.titre-bloc .statut-l{display:block;color:var(--c);margin-bottom:14px}
+.titre-bloc h1{font-size:clamp(34px,5.2vw,60px);line-height:1.04;margin:0}
+.titre-bloc .lieu{margin-top:10px;color:var(--ink-60);font-size:15px;letter-spacing:.03em}
+.titre-bloc .prix-g{
+  font-family:'Cormorant Garamond',serif;font-size:clamp(22px,2.6vw,30px);
+  white-space:nowrap;text-align:right;
+}
+.titre-bloc .prix-g small{display:block;font-family:'Jost';font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-40);margin-bottom:5px}
+
+.evenement{
+  margin-top:34px;padding:16px 0;
+  border-top:1px solid var(--gold);border-bottom:1px solid var(--rule-soft);
+  display:flex;gap:18px;align-items:baseline;flex-wrap:wrap;
+}
+.evenement .lab{color:var(--gold)}
+.evenement .txt{font-family:'Cormorant Garamond',serif;font-size:19px}
+
+.chapeau{
+  margin:44px 0 0;max-width:56ch;
+  font-family:'Cormorant Garamond',serif;font-size:clamp(19px,2.1vw,23px);
+  line-height:1.55;color:var(--ink);font-weight:300;
+}
+
+/* galerie : grandes images alternées, beaucoup de blanc */
+.galerie{margin:76px 0 0}
+.galerie figure{margin:0 0 76px}
+.galerie .g-full{width:100%}
+.galerie .g-full img{width:100%;height:auto}
+.galerie .g-full .plaque{aspect-ratio:3/2;width:100%}
+.galerie .g-droite,.galerie .g-gauche,
+.galerie .g-p-droite,.galerie .g-p-gauche{display:grid;grid-template-columns:repeat(12,1fr);align-items:center;gap:32px}
+.galerie .g-droite > div{grid-column:4 / span 9}
+.galerie .g-gauche > div{grid-column:1 / span 9}
+.galerie .g-p-droite > div{grid-column:7 / span 5}
+.galerie .g-p-gauche > div{grid-column:2 / span 5}
+.galerie .g-droite img,.galerie .g-gauche img,
+.galerie .g-p-droite img,.galerie .g-p-gauche img{width:100%;height:auto}
+.galerie .g-droite .plaque,.galerie .g-gauche .plaque{aspect-ratio:4/3;width:100%}
+.galerie .g-p-droite .plaque,.galerie .g-p-gauche .plaque{aspect-ratio:3/4;width:100%}
+.galerie figcaption{margin-top:12px;color:var(--ink-40);font-size:10px;letter-spacing:.2em;text-transform:uppercase}
+.galerie .plan-img{border:1px solid var(--rule-soft);padding:20px;background:#fff}
+
+/* fiche technique */
+.specs{margin:12px 0 0;border-top:1px solid var(--rule)}
+.specs .l{
+  display:grid;grid-template-columns:200px 1fr;gap:24px;
+  padding:16px 0;border-bottom:1px solid var(--rule-soft);
+}
+.specs .l dt{color:var(--ink-40);font-family:'Jost';font-weight:400;font-size:10px;letter-spacing:.22em;text-transform:uppercase;padding-top:4px}
+.specs .l dd{margin:0;font-family:'Cormorant Garamond',serif;font-size:21px}
+
+/* frise d'avancement */
+.frise{margin:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:0;border-top:1px solid var(--rule)}
+.frise .et{padding:18px 18px 18px 0;border-top:2px solid var(--rule-soft);margin-top:-1px;position:relative}
+.frise .et.fait{border-top-color:var(--s-travaux)}
+.frise .et.encours{border-top-color:var(--gold)}
+.frise .et .n{display:block;color:var(--ink-40);margin-bottom:6px}
+.frise .et.encours .n{color:var(--gold)}
+.frise .et .q{font-family:'Cormorant Garamond',serif;font-size:19px}
+.frise .et.avenir .q{color:var(--ink-40)}
+
+.section{margin:88px 0 0}
+.section > .sc{display:block;color:var(--ink-40);margin-bottom:18px}
+
+/* mini-plan */
+.miniplan{position:relative;height:300px;background:var(--paper-2);border:1px solid var(--rule-soft);overflow:hidden}
+.miniplan svg{position:absolute;inset:0;width:100%;height:100%}
+.miniplan .mp-dot{fill:var(--c)}
+.miniplan .mp-ring{fill:none;stroke:var(--c);opacity:.45}
+
+/* pied + contact */
+.pied{margin:96px 0 0;padding:52px 0 72px;border-top:1px solid var(--rule)}
+.pied .deux{display:grid;grid-template-columns:1fr auto;gap:36px;align-items:center}
+.contact-b{
+  display:inline-flex;align-items:center;gap:12px;
+  padding:16px 26px;border:1px solid var(--ink);
+  transition:background var(--t) var(--ease),color var(--t) var(--ease),border-color var(--t) var(--ease);
+}
+.contact-b:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.coord{color:var(--ink-60);font-size:13.5px;line-height:1.9}
+.coord a:hover{color:var(--gold)}
+.retour-bas{display:inline-block;margin-top:30px;color:var(--ink-60);border-bottom:1px solid var(--rule)}
+.retour-bas:hover{color:var(--gold);border-bottom-color:var(--gold)}
+
+.mentions{margin-top:44px;color:var(--ink-40);font-size:10.5px;line-height:1.85;letter-spacing:.02em;max-width:78ch}
+
+/* ===================== MOBILE ===================== */
+@media (max-width:860px){
+  .masthead{padding:18px 20px 14px;flex-wrap:wrap;gap:6px}
+  .wordmark{font-size:11px;letter-spacing:.34em}
+  .tagline{margin-left:0;font-size:13.5px;white-space:normal}
+  #filtres{left:20px;right:20px;bottom:20px;gap:7px}
+  #zoomhint{display:none}
+  #survol{
+    left:14px!important;right:14px!important;top:auto!important;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 128px)!important;
+    width:auto;
   }
+  .wrap{padding:0 20px}
+  .hero{height:62vh;min-height:320px}
+  .hero .retour{top:18px;left:20px}
+  .titre-bloc{grid-template-columns:1fr;padding-top:42px;gap:18px;align-items:start}
+  .titre-bloc .prix-g{text-align:left}
+  .galerie{margin-top:52px}
+  .galerie figure{margin-bottom:52px}
+  .galerie .g-droite > div,.galerie .g-gauche > div,
+  .galerie .g-p-droite > div,.galerie .g-p-gauche > div{grid-column:1 / -1}
+  .specs .l{grid-template-columns:1fr;gap:4px;padding:14px 0}
+  .frise{grid-auto-flow:row;grid-auto-columns:auto}
+  .frise .et{padding:14px 0;border-top-width:1px}
+  .frise .et{border-left:2px solid var(--rule-soft);padding-left:16px;border-top:0;margin-top:0}
+  .frise .et.fait{border-left-color:var(--s-travaux)}
+  .frise .et.encours{border-left-color:var(--gold)}
+  .section{margin-top:60px}
+  .pied .deux{grid-template-columns:1fr}
 }
-:root[data-theme="dark"]{
-  --bg:#12181e; --surface:#1a232b; --ink:#e9ecef; --muted:#a2adb7; --line:#2d3945;
-  --zinc:#8fb0c9; --zinc-soft:#22313d; --brass:#c9a561; --todo-bg:#33290e; --todo-ink:#f0cf7a; --todo-line:#a98621;
-  --ph-a:#222d36; --ph-b:#1d2730; --on-zinc:#0e151b; color-scheme: dark;
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:1ms!important}
 }
-*{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:72px}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
-img{max-width:100%;display:block}
-a{color:inherit}
-:focus-visible{outline:3px solid var(--brass);outline-offset:2px;border-radius:4px}
-.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
-h1,h2,h3{font-family:var(--font-display);font-weight:500;line-height:1.15;text-wrap:balance;margin:0}
-.num{font-variant-numeric:tabular-nums}
-
-/* à compléter */
-.todo{display:inline-block;padding:1px 8px;border:1.5px dashed var(--todo-line);background:var(--todo-bg);color:var(--todo-ink);border-radius:6px;font-size:.85em;font-weight:500;line-height:1.5}
-.draft-banner{background:var(--todo-bg);color:var(--todo-ink);border-bottom:1.5px dashed var(--todo-line);font-size:.9rem;padding:8px 0}
-
-/* en-tête */
-.top{padding:44px 0 28px}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:.78rem;color:var(--muted)}
-.brand i{display:block;width:28px;height:2px;background:var(--brass)}
-.top h1{font-size:clamp(2.1rem,6vw,3.6rem);margin:18px 0 12px;max-width:16ch}
-.top p.lead{max-width:56ch;color:var(--muted);margin:0;font-size:1.05rem}
-
-/* nav */
-.nav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-block:1px solid var(--line)}
-.nav .wrap{display:flex;gap:8px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
-.nav a{white-space:nowrap;text-decoration:none;font-size:.88rem;font-weight:600;padding:6px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface)}
-.nav a:hover{border-color:var(--zinc)}
-
-/* sommaire */
-.overview{padding:32px 0 8px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin:0;padding:0;list-style:none}
-.card{display:flex;flex-direction:column;height:100%;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;transition:transform .15s,border-color .15s}
-.card:hover{transform:translateY(-2px);border-color:var(--zinc)}
-.card .ph{aspect-ratio:4/3;border-radius:0;border:0}
-.card .body{padding:12px 14px 14px;display:flex;flex-direction:column;gap:4px;flex:1}
-.card .q{font-size:.78rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
-.card .t{font-family:var(--font-display);font-size:1.15rem;line-height:1.2}
-.card .p{margin-top:auto;padding-top:8px;font-weight:700}
-.card .m{font-size:.88rem;color:var(--muted)}
-
-/* placeholders */
-.ph{position:relative;display:grid;place-items:center;text-align:center;border:1px dashed var(--line);border-radius:10px;color:var(--muted);font-size:.85rem;font-weight:500;background:repeating-linear-gradient(135deg,var(--ph-a) 0 14px,var(--ph-b) 14px 28px)}
-.ph span{background:var(--surface);padding:3px 10px;border-radius:99px;border:1px solid var(--line)}
-
-/* fiche */
-.bien{padding:56px 0 8px;border-top:1px solid var(--line);margin-top:48px}
-.bien-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 32px;margin-bottom:22px}
-.kicker{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);margin-bottom:8px}
-.bien h2{font-size:clamp(1.7rem,4.4vw,2.6rem);max-width:22ch}
-.where{color:var(--muted);margin-top:8px}
-.price{font-family:var(--font-display);font-size:clamp(1.8rem,5vw,2.6rem);line-height:1}
-.price small{display:block;font-family:var(--font-body);font-size:.82rem;color:var(--muted);margin-top:6px}
-
-.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:0 0 26px}
-.facts div{background:var(--surface);padding:14px 16px}
-.facts dt{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
-.facts dd{margin:4px 0 0;font-family:var(--font-display);font-size:1.4rem}
-
-.sec-title{font-family:var(--font-body);font-size:.8rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:30px 0 12px}
-.gallery{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.gallery button{padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;overflow:hidden;display:block;width:100%}
-.gallery .ph,.gallery img{aspect-ratio:4/3;width:100%;object-fit:cover;border-radius:10px}
-.gallery button:first-child{grid-column:1/-1}
-.gallery button:first-child .ph,.gallery button:first-child img{aspect-ratio:16/9}
-@media (min-width:760px){
-  .gallery{grid-template-columns:repeat(4,1fr)}
-  .gallery button:first-child{grid-column:span 2;grid-row:span 2}
-  .gallery button:first-child .ph,.gallery button:first-child img{aspect-ratio:auto;height:100%}
-}
-.plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
-.plans button{padding:0;border:0;background:none;cursor:zoom-in;border-radius:10px;width:100%}
-.plans .ph,.plans img{aspect-ratio:4/3;width:100%;object-fit:contain;background:#fff;border-radius:10px}
-.videos{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.vid{display:grid;place-items:center;aspect-ratio:16/9;border-radius:10px;text-decoration:none;color:#fff;background:linear-gradient(160deg,var(--zinc),#14202a);text-align:center;padding:16px;gap:6px}
-.vid b{display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.18);border:2px solid #fff;font-size:1.3rem}
-.vid span{font-weight:600}
-.vid:hover{filter:brightness(1.1)}
-
-.two{display:grid;gap:28px}
-@media (min-width:860px){.two{grid-template-columns:1.1fr .9fr;gap:48px}}
-.desc p{margin:0 0 14px;max-width:62ch}
-.hl{margin:0;padding:0;list-style:none;display:grid;gap:8px}
-.hl li{padding-left:22px;position:relative}
-.hl li::before{content:"";position:absolute;left:0;top:.65em;width:10px;height:2px;background:var(--brass)}
-.spec{margin:0;display:grid;grid-template-columns:1fr;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
-.spec div{display:flex;justify-content:space-between;gap:16px;padding:10px 16px;border-bottom:1px solid var(--line)}
-.spec div:last-child{border-bottom:0}
-.spec dt{color:var(--muted)}
-.spec dd{margin:0;text-align:right;font-weight:600}
-
-/* contact */
-.contact{margin-top:34px;background:var(--zinc-soft);border:1px solid var(--line);border-radius:14px;padding:22px}
-.contact h3{font-size:1.5rem;margin-bottom:6px}
-.contact p.sub{margin:0 0 16px;color:var(--muted)}
-.form{display:grid;gap:12px;grid-template-columns:1fr}
-@media (min-width:700px){.form{grid-template-columns:1fr 1fr}.form .full{grid-column:1/-1}}
-label{display:grid;gap:5px;font-size:.85rem;font-weight:600}
-input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
-textarea{min-height:92px;resize:vertical}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}
-.btn{font:inherit;font-weight:700;display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:99px;border:1.5px solid var(--zinc);background:var(--zinc);color:var(--on-zinc);text-decoration:none;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--ink)}
-.btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
-.hint{font-size:.85rem;color:var(--muted);margin-top:10px}
-.copied{font-size:.85rem;font-weight:600;color:var(--zinc);align-self:center}
-
-/* mentions */
-footer{margin-top:72px;border-top:1px solid var(--line);padding:32px 0 56px;color:var(--muted);font-size:.88rem}
-footer h2{font-family:var(--font-body);font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink);margin-bottom:10px}
-footer ul{margin:0;padding-left:18px;display:grid;gap:6px;max-width:75ch}
-
-/* visionneuse */
-.lb{position:fixed;inset:0;z-index:100;background:rgba(10,14,18,.92);display:none;grid-template-rows:auto 1fr auto;padding:12px}
-.lb.open{display:grid}
-.lb-bar{display:flex;justify-content:space-between;align-items:center;color:#fff;gap:12px}
-.lb-stage{display:grid;place-items:center;min-height:0;padding:8px}
-.lb-stage img{max-height:100%;max-width:100%;object-fit:contain}
-.lb-stage .ph{width:min(900px,100%);aspect-ratio:3/2;font-size:1rem}
-.lb-nav{display:flex;justify-content:center;gap:12px}
-.lb button{font:inherit;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);border-radius:99px;padding:9px 18px;cursor:pointer;font-weight:600}
-.lb button:hover{background:rgba(255,255,255,.25)}
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.card{transition:none}}
 </style>
 </head>
 <body>
 
-<div class="draft-banner" id="draft" hidden><div class="wrap">Version de travail : les éléments en pointillés jaunes sont à compléter avant diffusion.</div></div>
+<!-- =================================================================
+     LES 14 PROJETS — tout se modifie ici, et nulle part ailleurs.
+     statut  : "vente" | "travaux" | "vendu" | "acquisition"
+     prix    : chaîne affichée, ou null (rien ne s'affiche)
+     photos  : chemins relatifs des images publiées à côté de la page
+               [{src:"img/xxx.jpg", lg:"Séjour"}, …]  — vide = plaque sobre
+     ll      : [latitude, longitude]   llApprox:true = à vérifier
+     ================================================================= -->
+<script>
+const CONTACT = {
+  nom:"ALCIONE IMMOBILIER",
+  email:"alexis@alcione.fr",
+  tel:"06 22 66 70 12"
+};
 
-<header class="top">
-  <div class="wrap">
-    <div class="brand"><i></i><span id="brandName"></span></div>
-    <h1>Cinq biens à vendre à Paris</h1>
-    <p class="lead">L'essentiel de chaque bien en un coup d'œil, puis photos, plans, vidéos et caractéristiques détaillées. Demandez une visite en deux clics.</p>
-  </div>
+const PROJETS = [
+  /* ---------- EN COURS DE VENTE ---------- */
+  {
+    slug:"155-montmartre", statut:"vente",
+    titre:"155, rue Montmartre",
+    quartier:"Le Sentier", arr:"Paris 2ᵉ",
+    adresse:"155 rue Montmartre, 75002 Paris",
+    surface:"44,04 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:"4ᵉ étage", dpe:null, annexes:"Cave",
+    prix:"499 000 €",
+    chapeau:"Au quatrième étage, un deux-pièces de 44,04 m² entièrement refait à neuf : séjour sous poutres anciennes ouvert sur la cuisine, verrière d'atelier, salle d'eau en travertin. Une cave complète le lot. L'immeuble s'ouvre sur une cour pavée et plantée.",
+    photos:[
+      {src:"img/155-montmartre/sejour.jpg",         lg:"Séjour"},
+      {src:"img/155-montmartre/sejour-repas.jpg",   lg:"Séjour et coin repas"},
+      {src:"img/155-montmartre/sejour-volumes.jpg", lg:"Séjour — volumes livrés"},
+      {src:"img/155-montmartre/entree.jpg",         lg:"Entrée et salle d'eau"},
+      {src:"img/155-montmartre/salle-eau.jpg",      lg:"Salle d'eau", portrait:true},
+      {src:"img/155-montmartre/cour.jpg",           lg:"La cour de l'immeuble"}
+    ],
+    ll:[48.8705,2.3430], llApprox:true
+  },
+  {
+    slug:"7-notre-dame-de-bonne-nouvelle", statut:"vente",
+    titre:"7, rue Notre-Dame-de-Bonne-Nouvelle",
+    quartier:"Bonne-Nouvelle", arr:"Paris 2ᵉ",
+    adresse:"7 rue Notre-Dame-de-Bonne-Nouvelle, 75002 Paris",
+    surface:"33,30 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:null, dpe:null, annee:"1910",
+    prix:"Prix sur demande",
+    evenement:{lab:"Vente interactive", txt:"Jeudi 26 novembre 2026, de 12 h à 14 h"},
+    chapeau:"Un deux-pièces en duplex, entièrement rénové dans un immeuble de 1910 : séjour ouvert sur la cuisine au premier niveau, puis chambre, dressing et salle d'eau sous les combles, éclairés en toiture. À quelques pas de l'église Notre-Dame-de-Bonne-Nouvelle.",
+    photos:[
+      {src:"img/7-notre-dame/sejour.jpg",              lg:"Séjour"},
+      {src:"img/7-notre-dame/cuisine-escalier.jpg",    lg:"Cuisine et escalier"},
+      {src:"img/7-notre-dame/sejour-volumes.jpg",      lg:"Séjour — volumes livrés"},
+      {src:"img/7-notre-dame/chambre.jpg",             lg:"Chambre, sous combles"},
+      {src:"img/7-notre-dame/dressing.jpg",            lg:"Dressing"},
+      {src:"img/7-notre-dame/salle-eau.jpg",           lg:"Salle d'eau", portrait:true},
+      {src:"img/7-notre-dame/salle-eau-buanderie.jpg", lg:"Salle d'eau et buanderie", portrait:true},
+      {src:"img/7-notre-dame/bonne-nouvelle.jpg",      lg:"Notre-Dame-de-Bonne-Nouvelle"}
+    ],
+    ll:[48.8685,2.3495], llApprox:true
+  },
+  {
+    slug:"69-bretagne", statut:"vente",
+    titre:"69, rue de Bretagne",
+    quartier:"Haut Marais", arr:"Paris 3ᵉ",
+    adresse:"69 rue de Bretagne, 75003 Paris",
+    surface:"44,06 m²", surfaceNote:"loi Carrez — 59,50 m² au sol",
+    pieces:"3 pièces", etage:"5ᵉ étage, escalier B", dpe:null, annee:"Avant 1948",
+    prix:"Prix sur demande",
+    chapeau:"Au cinquième étage, un trois-pièces de 44,06 m² sous charpente apparente : deux chambres et un séjour avec cuisine ouverte, ouvert sur les toits. Menuiseries double vitrage, combles isolés.",
+    photos:[
+      {src:"img/69-bretagne/salon.jpg",          lg:"Séjour"},
+      {src:"img/69-bretagne/chambre.jpg",        lg:"Chambre"},
+      {src:"img/69-bretagne/vue.jpg",            lg:"Vue depuis les fenêtres"},
+      {src:"img/69-bretagne/sejour-volumes.jpg", lg:"Séjour — volumes livrés"}
+    ],
+    ll:[48.8627,2.3641], llApprox:true
+  },
+  {
+    slug:"14-manuel", statut:"vente",
+    titre:"14, rue Manuel",
+    quartier:"Saint-Georges", arr:"Paris 9ᵉ",
+    adresse:"14 rue Manuel, 75009 Paris",
+    surface:"41,00 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:"6ᵉ étage", dpe:null,
+    prix:"Prix sur demande",
+    chapeau:"Au sixième étage, sous charpente, quarante-et-un mètres carrés entièrement rénovés : séjour ouvert sur la cuisine, chambre, salle d'eau. Les lucarnes et les ouvertures en toiture dégagent une vue sur les toits, de l'Opéra Garnier à la Tour Eiffel.",
+    photos:[
+      {src:"img/14-manuel/vue.jpg",            lg:"Vue sur les toits, de l'Opéra à la Tour Eiffel"},
+      {src:"img/14-manuel/sejour-cuisine.jpg", lg:"Séjour et cuisine"},
+      {src:"img/14-manuel/cuisine.jpg",        lg:"Cuisine"},
+      {src:"img/14-manuel/piece-combles.jpg",  lg:"Séjour"},
+      {src:"img/14-manuel/chambre.jpg",        lg:"Chambre"},
+      {src:"img/14-manuel/salle-eau.jpg",      lg:"Salle d'eau"}
+    ],
+    ll:[48.8775,2.3400], llApprox:true
+  },
+  {
+    slug:"33-sambre-et-meuse", statut:"vente",
+    titre:"33, rue de Sambre-et-Meuse",
+    quartier:"Canal Saint-Martin", arr:"Paris 10ᵉ",
+    adresse:"33 rue de Sambre-et-Meuse, 75010 Paris",
+    surface:"54,00 m²", surfaceNote:"loi Carrez",
+    pieces:"3 pièces", etage:null, dpe:null, annee:"Avant 1949",
+    prix:"Prix sur demande",
+    chapeau:"Un trois-pièces de 54 m² entièrement rénové dans un immeuble d'avant 1949 : séjour, chambre et bureau, cuisine séparée, salle d'eau en travertin. Parquet de chêne et menuiseries bois ; les fenêtres donnent sur les arbres, entre Belleville et le canal.",
+    photos:[
+      {src:"img/33-sambre-et-meuse/sejour.jpg",    lg:"Séjour"},
+      {src:"img/33-sambre-et-meuse/sejour-2.jpg",  lg:"Séjour"},
+      {src:"img/33-sambre-et-meuse/cuisine.jpg",   lg:"Cuisine"},
+      {src:"img/33-sambre-et-meuse/chambre.jpg",   lg:"Chambre"},
+      {src:"img/33-sambre-et-meuse/bureau.jpg",    lg:"Bureau"},
+      {src:"img/33-sambre-et-meuse/salle-eau.jpg", lg:"Salle d'eau", portrait:true},
+      {src:"img/33-sambre-et-meuse/douche.jpg",    lg:"Douche", portrait:true},
+      {src:"img/33-sambre-et-meuse/vue.jpg",       lg:"Vue depuis les fenêtres"}
+    ],
+    ll:[48.8735,2.3690], llApprox:true
+  },
+
+  /* ---------- EN TRAVAUX ---------- */
+  {
+    slug:"1bis-tardieu", statut:"travaux",
+    titre:"1 bis, rue Tardieu",
+    quartier:"Montmartre", arr:"Paris 18ᵉ",
+    adresse:"1 bis rue Tardieu, 75018 Paris",
+    surface:"60,12 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:null, dpe:null, prix:null,
+    chapeau:"Soixante mètres carrés en cours de rénovation, au pied de la butte Montmartre.",
+    photos:[], ll:[48.8840,2.3430], llApprox:true
+  },
+  {
+    slug:"7-franz-liszt", statut:"travaux",
+    titre:"7, place Franz-Liszt",
+    quartier:"Saint-Vincent-de-Paul", arr:"Paris 10ᵉ",
+    adresse:"7 place Franz-Liszt, 75010 Paris",
+    surface:"134,00 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:null, dpe:null, prix:null,
+    chapeau:"Cent trente-quatre mètres carrés en cours de rénovation, sur une place plantée face à l'église Saint-Vincent-de-Paul.",
+    photos:[], ll:[48.8783,2.3540], llApprox:true
+  },
+  {
+    slug:"13-roquette", statut:"travaux",
+    titre:"13, rue de la Roquette",
+    quartier:"Bastille", arr:"Paris 11ᵉ",
+    adresse:"13 rue de la Roquette, 75011 Paris",
+    surface:"47,98 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:null, dpe:null, prix:null,
+    chapeau:"Quarante-huit mètres carrés en cours de rénovation, à deux pas de la Bastille.",
+    photos:[], ll:[48.8545,2.3715], llApprox:true
+  },
+  {
+    slug:"10-ambroise-thomas", statut:"travaux",
+    titre:"10, rue Ambroise-Thomas",
+    quartier:"Faubourg-Poissonnière", arr:"Paris 9ᵉ",
+    adresse:"10 rue Ambroise-Thomas, 75009 Paris",
+    surface:"27,62 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:null, dpe:null, prix:null,
+    livraison:"Mars 2027",
+    chapeau:"Vingt-sept mètres carrés en cours de rénovation. Livraison prévue en mars 2027.",
+    photos:[], ll:[48.8745,2.3480], llApprox:true
+  },
+
+  /* ---------- VENDUS ---------- */
+  {
+    slug:"15-neuve-popincourt", statut:"vendu",
+    titre:"15, rue Neuve-Popincourt",
+    quartier:"Popincourt", arr:"Paris 11ᵉ",
+    adresse:"15 rue Neuve-Popincourt, 75011 Paris",
+    surface:"27,03 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:null, dpe:null, prix:null,
+    chapeau:"Rénovation complète d'un deux-pièces de 27,03 m² : séjour ouvert sur la cuisine, chambre indépendante, salle d'eau en travertin. Opération livrée et vendue.",
+    photos:[
+      {src:"img/15-neuve-popincourt/sejour-cuisine.jpg", lg:"Séjour et cuisine"},
+      {src:"img/15-neuve-popincourt/sejour.jpg",        lg:"Séjour"},
+      {src:"img/15-neuve-popincourt/coin-repas.jpg",    lg:"Coin repas", portrait:true},
+      {src:"img/15-neuve-popincourt/chambre.jpg",       lg:"Chambre"},
+      {src:"img/15-neuve-popincourt/degagement.jpg",    lg:"Dégagement", portrait:true},
+      {src:"img/15-neuve-popincourt/salle-eau.jpg",     lg:"Salle d'eau", portrait:true},
+      {src:"img/15-neuve-popincourt/entree.jpg",        lg:"Entrée", portrait:true}
+    ],
+    ll:[48.8650,2.3775], llApprox:true
+  },
+  {
+    slug:"96-folie-mericourt", statut:"vendu",
+    titre:"96, rue de la Folie-Méricourt",
+    quartier:"Folie-Méricourt", arr:"Paris 11ᵉ",
+    adresse:"96 rue de la Folie-Méricourt, 75011 Paris",
+    surface:"30,03 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:null, dpe:null, prix:null,
+    chapeau:"Rénovation complète d'un deux-pièces de 30,03 m² sous combles : séjour ouvert sur la cuisine, chambre indépendante avec rangements toute hauteur, salle d'eau en travertin et douche à l'italienne. Opération livrée et vendue.",
+    photos:[
+      {src:"img/96-folie-mericourt/sejour.jpg",      lg:"Séjour"},
+      {src:"img/96-folie-mericourt/sejour-vue.jpg",  lg:"Séjour, vue sur les toits"},
+      {src:"img/96-folie-mericourt/cuisine.jpg",     lg:"Cuisine"},
+      {src:"img/96-folie-mericourt/chambre.jpg",     lg:"Chambre"},
+      {src:"img/96-folie-mericourt/chambre-vue.jpg", lg:"Chambre", portrait:true},
+      {src:"img/96-folie-mericourt/salle-eau.jpg",   lg:"Salle d'eau", portrait:true},
+      {src:"img/96-folie-mericourt/vasque.jpg",      lg:"Vasque", portrait:true}
+    ],
+    ll:[48.8680,2.3715], llApprox:true
+  },
+  {
+    slug:"24-durantin", statut:"vendu",
+    titre:"24, rue Durantin",
+    quartier:"Abbesses", arr:"Paris 18ᵉ",
+    adresse:"24 rue Durantin, 75018 Paris",
+    surface:"32,54 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:null, dpe:null, prix:null,
+    chapeau:"Rénovation complète d'un deux-pièces de 32,54 m² aux Abbesses : séjour ouvert sur la cuisine, chambre avec rangements toute hauteur, salle d'eau en travertin. Opération livrée et vendue.",
+    photos:[
+      {src:"img/24-durantin/sejour.jpg",        lg:"Séjour"},
+      {src:"img/24-durantin/sejour-cuisine.jpg",lg:"Séjour et coin repas", petite:true},
+      {src:"img/24-durantin/cuisine.jpg",       lg:"Cuisine", petite:true},
+      {src:"img/24-durantin/chambre.jpg",       lg:"Chambre"},
+      {src:"img/24-durantin/chambre-2.jpg",     lg:"Chambre", portrait:true},
+      {src:"img/24-durantin/salle-de-bain.jpg", lg:"Salle d'eau", portrait:true},
+      {src:"img/24-durantin/wc.jpg",            lg:"WC", portrait:true}
+    ],
+    ll:[48.8860,2.3370], llApprox:true
+  },
+  {
+    slug:"10-popincourt", statut:"vendu",
+    titre:"10, rue Popincourt",
+    quartier:"Popincourt", arr:"Paris 11ᵉ",
+    adresse:"10 rue Popincourt, 75011 Paris",
+    surface:"30,02 m²", surfaceNote:"loi Carrez",
+    pieces:"2 pièces", etage:null, dpe:null, prix:null,
+    chapeau:"Rénovation complète d'un deux-pièces de 30,02 m² : séjour ouvert sur la cuisine, chambre avec dressing, salle d'eau en travertin. L'immeuble s'ouvre sur une allée pavée et plantée. Opération livrée et vendue.",
+    photos:[
+      {src:"img/10-popincourt/sejour.jpg",           lg:"Séjour"},
+      {src:"img/10-popincourt/sejour-repas.jpg",     lg:"Séjour et coin repas"},
+      {src:"img/10-popincourt/cuisine.jpg",          lg:"Cuisine"},
+      {src:"img/10-popincourt/chambre.jpg",          lg:"Chambre"},
+      {src:"img/10-popincourt/chambre-dressing.jpg", lg:"Chambre et dressing", portrait:true},
+      {src:"img/10-popincourt/salle-eau.jpg",        lg:"Salle d'eau", portrait:true},
+      {src:"img/10-popincourt/allee.jpg",            lg:"L'allée de l'immeuble", portrait:true},
+      {src:"img/10-popincourt/plan.jpg",             lg:"Plan", portrait:true, plan:true}
+    ],
+    ll:[48.8575,2.3780], llApprox:true
+  },
+  {
+    slug:"28-boulets", statut:"vendu",
+    titre:"28, rue des Boulets",
+    quartier:"Nation", arr:"Paris 11ᵉ",
+    adresse:"28 rue des Boulets, 75011 Paris",
+    surface:"31,60 m²", surfaceNote:"loi Carrez",
+    pieces:null, etage:null, dpe:null, prix:null,
+    chapeau:"Rénovation complète d'un appartement de 31,60 m², proche Nation. Opération livrée et vendue.",
+    photos:[], ll:[48.8520,2.3880], llApprox:true
+  }
+];
+
+/* Géographie : tracé indicatif de la Seine et limite de Paris.
+   Dessinés à la main, sans fond de carte ni dépendance externe. */
+const SEINE = [
+  [48.8290,2.4160],[48.8330,2.4060],[48.8355,2.3930],[48.8390,2.3800],
+  [48.8440,2.3690],[48.8480,2.3620],[48.8515,2.3560],[48.8545,2.3480],
+  [48.8575,2.3400],[48.8600,2.3330],[48.8625,2.3230],[48.8640,2.3130],
+  [48.8645,2.3030],[48.8625,2.2950],[48.8590,2.2910],[48.8545,2.2860],
+  [48.8495,2.2790],[48.8440,2.2730],[48.8390,2.2700],[48.8340,2.2690]
+];
+const VILLE = [
+  [48.9010,2.3350],[48.9000,2.3700],[48.8905,2.3920],[48.8840,2.4000],
+  [48.8700,2.4140],[48.8560,2.4160],[48.8450,2.4120],[48.8300,2.3900],
+  [48.8180,2.3600],[48.8200,2.3430],[48.8220,2.3300],[48.8250,2.3000],
+  [48.8300,2.2780],[48.8350,2.2650],[48.8460,2.2520],[48.8600,2.2500],
+  [48.8760,2.2700],[48.8850,2.2850],[48.8920,2.3000],[48.8980,2.3100],
+  [48.9010,2.3350]
+];
+/* Seuls les arrondissements où se trouvent des biens sont numérotés. */
+const ARRS = [
+  ["2ᵉ",48.8680,2.3420],["3ᵉ",48.8628,2.3600],["9ᵉ",48.8768,2.3372],
+  ["10ᵉ",48.8762,2.3600],["11ᵉ",48.8592,2.3800],["18ᵉ",48.8900,2.3450]
+];
+
+/* Limites d'arrondissement — tracé indicatif, relevé à la main
+   sur les grands axes : boulevards, rues de séparation et la Seine. */
+const LIMITES = [
+  [[48.8656,2.3215],[48.8700,2.3245]],                                              // 1/8 rue Royale
+  [[48.8700,2.3245],[48.8705,2.3318]],                                              // 2/8 bd des Capucines
+  [[48.8705,2.3318],[48.8676,2.3295],[48.8665,2.3370],[48.8652,2.3440],[48.8645,2.3496]], // 1/2
+  [[48.8705,2.3318],[48.8712,2.3390],[48.8718,2.3450],[48.8712,2.3490]],            // 2/9 Grands Boulevards
+  [[48.8712,2.3490],[48.8695,2.3525]],                                              // 2/10 porte Saint-Denis
+  [[48.8645,2.3498],[48.8670,2.3510],[48.8695,2.3525]],                             // 2/3 rue Saint-Denis
+  [[48.8580,2.3478],[48.8645,2.3496]],                                              // 1/4 bd de Sébastopol
+  [[48.8610,2.3498],[48.8600,2.3580],[48.8593,2.3663]],                             // 3/4 rue Rambuteau
+  [[48.8695,2.3525],[48.8685,2.3580],[48.8675,2.3637]],                             // 3/10 bd Saint-Martin
+  [[48.8675,2.3637],[48.8640,2.3660],[48.8593,2.3663],[48.8532,2.3692]],            // 3-4/11 bd Beaumarchais
+  [[48.8675,2.3637],[48.8700,2.3705],[48.8722,2.3768]],                             // 10/11 fg du Temple
+  [[48.8718,2.3450],[48.8775,2.3470],[48.8836,2.3494]],                             // 9/10 fg Poissonnière
+  [[48.8836,2.3494],[48.8840,2.3600],[48.8842,2.3685]],                             // 10/18 bd de la Chapelle
+  [[48.8842,2.3685],[48.8785,2.3730],[48.8722,2.3768]],                             // 10/19 bd de la Villette
+  [[48.8836,2.3494],[48.8828,2.3420],[48.8822,2.3360],[48.8838,2.3273]],            // 9/18 Rochechouart–Clichy
+  [[48.8838,2.3273],[48.8775,2.3285],[48.8705,2.3318]],                             // 8/9 rue de Clichy
+  [[48.8838,2.3273],[48.8828,2.3180],[48.8812,2.3090],[48.8790,2.3010],[48.8738,2.2950]], // 8/17 Batignolles
+  [[48.8838,2.3273],[48.8905,2.3285],[48.8977,2.3290]],                             // 17/18 av. de Saint-Ouen
+  [[48.8842,2.3685],[48.8900,2.3715],[48.8977,2.3755]],                             // 18/19 rue d'Aubervilliers
+  [[48.8722,2.3768],[48.8740,2.3880],[48.8762,2.4000],[48.8770,2.4080]],            // 19/20 rue de Belleville
+  [[48.8722,2.3768],[48.8655,2.3845],[48.8570,2.3925],[48.8484,2.3958]],            // 11/20 Ménilmontant–Charonne
+  [[48.8532,2.3692],[48.8512,2.3810],[48.8484,2.3958]],                             // 11/12 fg Saint-Antoine
+  [[48.8484,2.3958],[48.8472,2.4090]],                                              // 12/20
+  [[48.8738,2.2950],[48.8765,2.2880],[48.8780,2.2825]],                             // 16/17 Grande-Armée
+  [[48.8738,2.2950],[48.8690,2.2985],[48.8640,2.3010]],                             // 8/16 av. Marceau
+  [[48.8535,2.3432],[48.8465,2.3405],[48.8400,2.3385]],                             // 5/6 bd Saint-Michel
+  [[48.8585,2.3287],[48.8520,2.3262],[48.8477,2.3195]],                             // 6/7 rue des Saints-Pères
+  [[48.8400,2.3385],[48.8395,2.3330],[48.8420,2.3240],[48.8428,2.3210]],            // 5-6/13-14 Port-Royal–Montparnasse
+  [[48.8540,2.2890],[48.8490,2.3020],[48.8450,2.3120],[48.8428,2.3210]],            // 7/15 Suffren–Garibaldi
+  [[48.8428,2.3210],[48.8370,2.3160],[48.8310,2.3100],[48.8275,2.3050]],            // 14/15 av. du Maine
+  [[48.8395,2.3330],[48.8320,2.3345],[48.8250,2.3390],[48.8190,2.3430]]             // 13/14 rue de la Santé
+];
+</script>
+
+<header class="masthead">
+  <div class="wordmark">Alcione<span class="sep">·</span>Epona</div>
+  <div class="tagline">Quatorze adresses parisiennes</div>
 </header>
 
-<nav class="nav" aria-label="Aller à un bien"><div class="wrap" id="navLinks"></div></nav>
-
-<main>
-  <section class="overview" aria-label="Sommaire des biens">
-    <div class="wrap"><ul class="cards" id="cards"></ul></div>
-  </section>
-  <div class="wrap" id="biens"></div>
+<main id="vue-carte">
+  <div id="plan">
+    <svg id="geo" aria-hidden="true">
+      <path id="g-ville" class="geo-ville"></path>
+      <g id="g-limites"></g>
+      <path id="g-seine" class="geo-seine"></path>
+      <g id="g-arrs"></g>
+    </svg>
+  </div>
+  <nav id="filtres"></nav>
+  <div id="zoomhint">Molette pour zoomer · glisser pour déplacer</div>
 </main>
 
-<footer>
-  <div class="wrap">
-    <h2>Informations légales</h2>
-    <ul id="legal"></ul>
-  </div>
-</footer>
+<aside id="survol" aria-hidden="true"></aside>
 
-<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Visionneuse">
-  <div class="lb-bar"><span id="lbCap"></span><button type="button" id="lbClose">Fermer</button></div>
-  <div class="lb-stage" id="lbStage"></div>
-  <div class="lb-nav"><button type="button" id="lbPrev">Précédent</button><button type="button" id="lbNext">Suivant</button></div>
-</div>
+<section id="vue-fiche" aria-live="polite"></section>
 
 <script>
-/* ============ DONNÉES À MODIFIER ============ */
-const BROUILLON = true;            // true : affiche le bandeau et les champs à compléter
-const AFFICHER_ADRESSE = false;    // false : quartier seulement ; true : adresse exacte
-const CONTACT = {                  // laissez vide ce qui n'est pas encore fourni
-  nom: "",                         // nom ou agence
-  tel: "",                         // ex. "+33 6 00 00 00 00"
-  email: "",
-  whatsapp: ""                     // numéro international sans + ni espaces, ex. "33600000000"
+'use strict';
+/* =========================================================
+   1 · PROJECTION  (Web Mercator, échelle en pixels)
+   ========================================================= */
+const R = 128/Math.PI;
+const merc = (lat,lon)=>({
+  x: R*(lon*Math.PI/180),
+  y: R*Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2))
+});
+
+const CENTRE = merc(48.8610,2.3420);   // cœur de Paris
+const vue = { z: 1, cx: CENTRE.x, cy: CENTRE.y, zMin:.72, zMax:3.4 };
+
+let W=0,H=0,ECH=1;
+function mesurer(){
+  const r = document.getElementById('plan').getBoundingClientRect();
+  W=r.width; H=r.height;
+  // échelle de base : Paris tient dans le cadre avec une marge généreuse
+  const a=merc(48.812,2.246), b=merc(48.906,2.424);
+  ECH = Math.min(W/(b.x-a.x), H/(b.y-a.y)) * .80;
+}
+const proj = (lat,lon)=>{
+  const p=merc(lat,lon);
+  return {
+    x: W/2 + (p.x-vue.cx)*ECH*vue.z,
+    y: H/2 - (p.y-vue.cy)*ECH*vue.z
+  };
 };
-/* photos: [{src, alt}] · plans: [{src, alt}] · videos: [{titre, url}] */
-const BIENS = [
-  { id:"bien-1", titre:"F2 refait à neuf au 4e étage", quartier:"Paris 2e", adresse:"155 rue Montmartre, 75002 Paris",
-    prix:null, prixType:"", surface:44.04, surfaceNote:"loi Carrez", pieces:2, etage:"4e étage",
-    photos:[], plans:[], videos:[],
-    description:"Au 4e étage, F2 de 44,04 m² (loi Carrez), refait à neuf, avec cave.",
-    points:[],
-    carac:{ "Surface (loi Carrez)":"44,04 m²", "Étage":"4e étage", "Ascenseur":"", "Nombre de pièces":"2", "Chambres":"", "État":"Refait à neuf", "Cave":"Oui", "Exposition":"", "Chauffage":"", "DPE (classe énergie)":"", "GES (émissions)":"", "Dépenses d'énergie estimées":"", "Charges de copropriété":"", "Taxe foncière":"", "Nombre de lots de la copropriété":"" } },
-  { id:"bien-2", titre:"Bien à Bonne-Nouvelle", quartier:"Paris 2e", adresse:"7 Notre-Dame de Bonne-Nouvelle, 75002 Paris",
-    prix:null, prixType:"", surface:null, surfaceNote:"", pieces:null, etage:"",
-    photos:[], plans:[], videos:[], description:"", points:[],
-    carac:{ "Surface (loi Carrez)":"", "Étage":"", "Ascenseur":"", "Nombre de pièces":"", "Chambres":"", "État":"", "Cave":"", "Exposition":"", "Chauffage":"", "DPE (classe énergie)":"", "GES (émissions)":"", "Dépenses d'énergie estimées":"", "Charges de copropriété":"", "Taxe foncière":"", "Nombre de lots de la copropriété":"" } },
-  { id:"bien-3", titre:"", quartier:"", adresse:"", prix:null, prixType:"", surface:null, surfaceNote:"", pieces:null, etage:"", photos:[], plans:[], videos:[], description:"", points:[], carac:{} },
-  { id:"bien-4", titre:"", quartier:"", adresse:"", prix:null, prixType:"", surface:null, surfaceNote:"", pieces:null, etage:"", photos:[], plans:[], videos:[], description:"", points:[], carac:{} },
-  { id:"bien-5", titre:"", quartier:"", adresse:"", prix:null, prixType:"", surface:null, surfaceNote:"", pieces:null, etage:"", photos:[], plans:[], videos:[], description:"", points:[], carac:{} }
-];
-const CARAC_PAR_DEFAUT = ["Surface (loi Carrez)","Étage","Ascenseur","Nombre de pièces","Chambres","État","Cave","Exposition","Chauffage","DPE (classe énergie)","GES (émissions)","Dépenses d'énergie estimées","Charges de copropriété","Taxe foncière","Nombre de lots de la copropriété"];
-const MENTIONS = [
-  "Prix : préciser s'il s'agit du prix net vendeur ou du prix honoraires inclus (FAI), et la part des honoraires à la charge de l'acheteur le cas échéant.",
-  "DPE : classe énergie et classe climat (GES) de chaque bien, avec la fourchette de dépenses annuelles d'énergie, à reporter dans la fiche de chaque bien.",
-  "Copropriété : nombre de lots, montant moyen annuel des charges et mention d'éventuelles procédures en cours, à reporter dans la fiche de chaque bien.",
-  "Les informations de cette page sont données à titre indicatif et ne constituent pas une offre contractuelle."
-];
 
-/* ============ OUTILS ============ */
-const $ = (s, r=document) => r.querySelector(s);
-const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const todo = (txt="à compléter") => BROUILLON ? `<span class="todo">${esc(txt)}</span>` : "";
-const nf = new Intl.NumberFormat("fr-FR");
-const fmtSurface = n => n == null ? null : n.toLocaleString("fr-FR",{maximumFractionDigits:2}) + " m²";
-const fmtPrix = n => n == null ? null : nf.format(n) + " €";
-const val = (v, txt) => (v == null || v === "") ? todo(txt) : esc(v);
-const nomBien = (b, i) => b.titre || `Bien ${i+1}`;
-const lieu = b => AFFICHER_ADRESSE ? (b.adresse || b.quartier) : b.quartier;
+/* =========================================================
+   2 · HABILLAGE GÉOGRAPHIQUE
+   ========================================================= */
+const COUL = {
+  vente:  {c:'var(--s-vente)',   lab:'En cours de vente'},
+  travaux:{c:'var(--s-travaux)', lab:'En travaux'},
+  vendu:  {c:'var(--s-vendu)',   lab:'Vendu'},
+  acquisition:{c:'var(--s-acq)', lab:"En cours d'acquisition"}
+};
+const d = pts => pts.map((p,i)=>{const q=proj(p[0],p[1]);return (i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1);}).join(' ');
 
-/* ============ PAGE ============ */
-$("#draft").hidden = !BROUILLON;
-$("#brandName").innerHTML = CONTACT.nom ? esc(CONTACT.nom) : (BROUILLON ? todo("votre nom ou agence") : "");
-
-$("#navLinks").innerHTML = BIENS.map((b,i)=>`<a href="#${b.id}">Bien ${i+1}</a>`).join("");
-
-$("#cards").innerHTML = BIENS.map((b,i)=>{
-  const meta = [fmtSurface(b.surface), b.pieces ? b.pieces+" pièce"+(b.pieces>1?"s":"") : null].filter(Boolean).join(" · ");
-  const thumb = b.photos[0] ? `<img src="${esc(b.photos[0].src)}" alt="${esc(b.photos[0].alt||"")}" style="aspect-ratio:4/3;object-fit:cover;width:100%">` : `<div class="ph"><span>Photo à venir</span></div>`;
-  return `<li><a class="card" href="#${b.id}">${thumb}<div class="body">
-    <div class="q">${val(lieu(b),"quartier")}</div>
-    <div class="t">${b.titre ? esc(b.titre) : todo("titre")}</div>
-    <div class="m num">${meta || todo("surface · pièces")}</div>
-    <div class="p num">${fmtPrix(b.prix) || todo("prix")}</div></div></a></li>`;
-}).join("");
-
-function sectionMedia(b){
-  const photos = b.photos.length ? b.photos : Array.from({length:6},(_,k)=>({ph:`Photo ${k+1} à venir`}));
-  const plans = b.plans.length ? b.plans : [{ph:"Plan à venir"}];
-  const g = (arr,kind) => arr.map((p,k)=>`<button type="button" data-open="${b.id}|${kind}|${k}" aria-label="Agrandir ${kind==="p"?"le plan":"la photo"} ${k+1}">${p.src?`<img src="${esc(p.src)}" alt="${esc(p.alt||"")}" loading="lazy">`:`<div class="ph"><span>${esc(p.ph)}</span></div>`}</button>`).join("");
-  const vids = b.videos.length
-    ? b.videos.map(v=>`<a class="vid" href="${esc(v.url)}" target="_blank" rel="noopener"><b aria-hidden="true">▶</b><span>${esc(v.titre||"Voir la vidéo")}</span></a>`).join("")
-    : `<div class="ph" style="aspect-ratio:16/9"><span>Vidéo à venir (visite, drone…)</span></div>`;
-  return `
-    <h3 class="sec-title">Photos</h3><div class="gallery">${g(photos,"g")}</div>
-    <h3 class="sec-title">Plans</h3><div class="plans">${g(plans,"p")}</div>
-    <h3 class="sec-title">Vidéos</h3><div class="videos">${vids}</div>`;
-}
-
-function contactBlock(b,i){
-  const c = CONTACT, id = b.id;
-  const tel = c.tel ? `<a class="btn primary" href="tel:${esc(c.tel.replace(/\s/g,""))}">Appeler</a>` : `<span class="btn primary" aria-disabled="true">Appeler</span>`;
-  return `<section class="contact" aria-labelledby="c-${id}">
-    <h3 id="c-${id}">Demander une visite</h3>
-    <p class="sub">Indiquez vos disponibilités : le message est préparé pour vous.</p>
-    <div class="form">
-      <label>Votre nom<input id="n-${id}" autocomplete="name"></label>
-      <label>Votre téléphone<input id="t-${id}" type="tel" autocomplete="tel"></label>
-      <label class="full">Disponibilités souhaitées<input id="d-${id}" placeholder="ex. en semaine après 18 h, samedi matin"></label>
-    </div>
-    <div class="actions" style="margin-top:14px">
-      ${tel}
-      <a class="btn" id="m-${id}" ${c.email?"":'aria-disabled="true"'} href="#">E-mail</a>
-      <a class="btn" id="w-${id}" ${c.whatsapp?"":'aria-disabled="true"'} href="#" target="_blank" rel="noopener">WhatsApp</a>
-      <button type="button" class="btn ghost" data-copy="${id}">Copier le message</button>
-      <span class="copied" id="cp-${id}" role="status"></span>
-    </div>
-    <p class="hint">${[c.tel&&("Tél. "+esc(c.tel)), c.email&&esc(c.email)].filter(Boolean).join(" · ") || todo("téléphone, e-mail ou WhatsApp à renseigner")}</p>
-  </section>`;
-}
-
-$("#biens").innerHTML = BIENS.map((b,i)=>{
-  const caracKeys = Object.keys(b.carac).length ? Object.keys(b.carac) : CARAC_PAR_DEFAUT;
-  const ppm = (b.prix && b.surface) ? nf.format(Math.round(b.prix/b.surface)) + " € / m²" : "";
-  const fact = (t,v) => `<div><dt>${t}</dt><dd class="num">${v}</dd></div>`;
-  return `<article class="bien" id="${b.id}" aria-labelledby="h-${b.id}">
-    <div class="bien-head">
-      <div>
-        <div class="kicker">Bien ${i+1} sur ${BIENS.length}</div>
-        <h2 id="h-${b.id}">${b.titre ? esc(b.titre) : todo("titre accrocheur")}</h2>
-        <div class="where">${val(lieu(b), AFFICHER_ADRESSE?"adresse":"quartier")}</div>
-      </div>
-      <div class="price num">${fmtPrix(b.prix) || todo("prix")}<small>${b.prix ? (b.prixType ? esc(b.prixType) : todo("net vendeur ou FAI ?")) : ""}${ppm?` · ${ppm}`:""}</small></div>
-    </div>
-    <dl class="facts">
-      ${fact("Surface", fmtSurface(b.surface) ? esc(fmtSurface(b.surface)) + (b.surfaceNote?`<small style="font-family:var(--font-body);font-size:.75rem;color:var(--muted)"> ${esc(b.surfaceNote)}</small>`:"") : todo())}
-      ${fact("Pièces", val(b.pieces))}
-      ${fact("Étage", val(b.etage))}
-    </dl>
-    ${sectionMedia(b)}
-    <div class="two" style="margin-top:34px">
-      <div class="desc">
-        <h3 class="sec-title" style="margin-top:0">Description</h3>
-        ${b.description ? `<p>${esc(b.description)}</p>` : `<p>${todo("description à rédiger")}</p>`}
-        ${b.points.length ? `<ul class="hl">${b.points.map(p=>`<li>${esc(p)}</li>`).join("")}</ul>` : `<ul class="hl"><li>${todo("points forts")}</li></ul>`}
-      </div>
-      <div>
-        <h3 class="sec-title" style="margin-top:0">Caractéristiques</h3>
-        <dl class="spec">${caracKeys.map(k=>`<div><dt>${esc(k)}</dt><dd>${val(b.carac[k])}</dd></div>`).join("")}</dl>
-      </div>
-    </div>
-    ${contactBlock(b,i)}
-  </article>`;
-}).join("");
-
-$("#legal").innerHTML = MENTIONS.map(m=>`<li>${esc(m)}</li>`).join("");
-
-/* ---- messages de contact ---- */
-function buildMsg(id){
-  const i = BIENS.findIndex(b=>b.id===id), b = BIENS[i];
-  const nom = $("#n-"+id).value.trim(), tel = $("#t-"+id).value.trim(), dispo = $("#d-"+id).value.trim();
-  const ou = lieu(b) ? ` (${lieu(b)})` : "";
-  return `Bonjour, je souhaite visiter le bien « ${nomBien(b,i)} »${ou}.` +
-    (dispo ? `\nMes disponibilités : ${dispo}.` : "") +
-    (nom || tel ? `\n${[nom,tel].filter(Boolean).join(" · ")}` : "") + "\nMerci.";
-}
-function refreshLinks(id){
-  const msg = buildMsg(id), b = BIENS.find(x=>x.id===id);
-  const m = $("#m-"+id), w = $("#w-"+id);
-  if (CONTACT.email) m.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Demande de visite : "+nomBien(b,BIENS.indexOf(b)))}&body=${encodeURIComponent(msg)}`;
-  if (CONTACT.whatsapp) w.href = `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(msg)}`;
-}
-BIENS.forEach(b=>{
-  ["n-","t-","d-"].forEach(p=>$("#"+p+b.id).addEventListener("input",()=>refreshLinks(b.id)));
-  refreshLinks(b.id);
-  ["m-","w-"].forEach(p=>$("#"+p+b.id).addEventListener("click",e=>{ if(e.currentTarget.getAttribute("aria-disabled")==="true") e.preventDefault(); }));
+const SVGNS='http://www.w3.org/2000/svg';
+const elArrs = document.getElementById('g-arrs');
+ARRS.forEach(a=>{
+  const t=document.createElementNS(SVGNS,'text');
+  t.setAttribute('class','geo-arr'); t.textContent=a[0];
+  t.dataset.lat=a[1]; t.dataset.lon=a[2];
+  elArrs.appendChild(t);
 });
-document.addEventListener("click", async e=>{
-  const c = e.target.closest("[data-copy]");
-  if(!c) return;
-  const id = c.dataset.copy, out = $("#cp-"+id);
-  try{ await navigator.clipboard.writeText(buildMsg(id)); out.textContent = "Message copié"; }
-  catch(_){ out.textContent = "Copie impossible : sélectionnez le texte manuellement."; }
-  setTimeout(()=>out.textContent="",3000);
+const elLim = document.getElementById('g-limites');
+LIMITES.forEach(()=>{
+  const p=document.createElementNS(SVGNS,'path');
+  p.setAttribute('class','geo-limite');
+  elLim.appendChild(p);
 });
 
-/* ---- visionneuse ---- */
-const lb = $("#lb"), stage = $("#lbStage"), cap = $("#lbCap");
-let items = [], cur = 0, opener = null;
-function sets(id,kind){
-  const b = BIENS.find(x=>x.id===id);
-  const arr = kind==="p" ? (b.plans.length?b.plans:[{ph:"Plan à venir"}]) : (b.photos.length?b.photos:Array.from({length:6},(_,k)=>({ph:`Photo ${k+1} à venir`})));
-  return arr;
+function dessinerGeo(){
+  document.getElementById('g-ville').setAttribute('d', d(VILLE)+' Z');
+  document.getElementById('g-seine').setAttribute('d', d(SEINE));
+  const paths=elLim.querySelectorAll('path');
+  LIMITES.forEach((l,i)=>paths[i].setAttribute('d', d(l)));
+  elArrs.querySelectorAll('text').forEach(t=>{
+    const p=proj(+t.dataset.lat,+t.dataset.lon);
+    t.setAttribute('x',p.x.toFixed(1)); t.setAttribute('y',p.y.toFixed(1));
+  });
 }
-function show(){
-  const p = items[cur];
-  stage.innerHTML = p.src ? `<img src="${esc(p.src)}" alt="${esc(p.alt||"")}">` : `<div class="ph"><span>${esc(p.ph)}</span></div>`;
-  cap.textContent = `${cur+1} / ${items.length}`;
-}
-function openLb(btn){
-  const [id,kind,k] = btn.dataset.open.split("|");
-  items = sets(id,kind); cur = +k; opener = btn;
-  lb.classList.add("open"); show(); $("#lbClose").focus();
-  document.body.style.overflow = "hidden";
-}
-function closeLb(){ lb.classList.remove("open"); document.body.style.overflow=""; if(opener) opener.focus(); }
-const step = d => { cur = (cur+d+items.length)%items.length; show(); };
-document.addEventListener("click", e=>{ const b = e.target.closest("[data-open]"); if(b) openLb(b); });
-$("#lbClose").onclick = closeLb; $("#lbPrev").onclick = ()=>step(-1); $("#lbNext").onclick = ()=>step(1);
-lb.addEventListener("click", e=>{ if(e.target===lb || e.target===stage) closeLb(); });
-document.addEventListener("keydown", e=>{
-  if(!lb.classList.contains("open")) return;
-  if(e.key==="Escape") closeLb();
-  if(e.key==="ArrowLeft") step(-1);
-  if(e.key==="ArrowRight") step(1);
+
+/* =========================================================
+   3 · PASTILLES
+   ========================================================= */
+const plan = document.getElementById('plan');
+const pins = PROJETS.map(p=>{
+  const b=document.createElement('button');
+  b.className='pin'; b.dataset.statut=p.statut; b.dataset.slug=p.slug;
+  b.style.setProperty('--c',COUL[p.statut].c);
+  b.style.setProperty('--c-ring',COUL[p.statut].c);
+  b.setAttribute('aria-label',p.titre+' — '+COUL[p.statut].lab);
+  b.innerHTML='<span class="halo"></span><span class="dot"></span>';
+  plan.appendChild(b);
+  return {p,el:b};
 });
+
+/* léger décalage quand deux pastilles se chevauchent */
+function placerPins(){
+  const pos = pins.map(({p})=>proj(p.ll[0],p.ll[1]));
+  for(let i=0;i<pos.length;i++){
+    for(let j=i+1;j<pos.length;j++){
+      const dx=pos[j].x-pos[i].x, dy=pos[j].y-pos[i].y;
+      const dist=Math.hypot(dx,dy);
+      if(dist<19 && dist>0){
+        const k=(19-dist)/2/dist;
+        pos[i].x-=dx*k; pos[i].y-=dy*k;
+        pos[j].x+=dx*k; pos[j].y+=dy*k;
+      }
+    }
+  }
+  pins.forEach((o,i)=>{
+    o.el.style.transform='translate('+pos[i].x.toFixed(1)+'px,'+pos[i].y.toFixed(1)+'px)';
+    o.xy=pos[i];
+  });
+}
+
+/* =========================================================
+   4 · FILTRES
+   ========================================================= */
+let filtre='tout';
+const ORDRE=['vente','travaux','vendu','acquisition'];
+const navF=document.getElementById('filtres');
+function construireFiltres(){
+  const n=s=>PROJETS.filter(p=>p.statut===s).length;
+  let h='<button class="f sc on" data-f="tout">Tout <span class="n">'+PROJETS.length+'</span></button>';
+  ORDRE.forEach(s=>{ if(!n(s)) return;
+    h+='<button class="f sc" data-f="'+s+'" style="--c:'+COUL[s].c+'">'+
+       '<span class="tin"></span>'+COUL[s].lab+' <span class="n">'+n(s)+'</span></button>';
+  });
+  navF.innerHTML=h;
+  navF.querySelectorAll('.f').forEach(b=>b.addEventListener('click',()=>{
+    filtre=b.dataset.f;
+    navF.querySelectorAll('.f').forEach(x=>x.classList.toggle('on',x===b));
+    pins.forEach(o=>o.el.classList.toggle('masque', filtre!=='tout' && o.p.statut!==filtre));
+    cacherSurvol();
+  }));
+}
+
+/* =========================================================
+   5 · CARTE FLOTTANTE
+   ========================================================= */
+const survol=document.getElementById('survol');
+let survolTimer=null;
+function vignette(p){
+  return p.photos.length
+    ? '<div class="vignette"><img src="'+p.photos[0].src+'" alt="" loading="lazy"></div>'
+    : '<div class="vignette"><div class="plaque"><span>Visuel à venir</span></div></div>';
+}
+function montrerSurvol(o){
+  const p=o.p;
+  const bits=[p.surface];
+  if(p.pieces) bits.push(p.pieces);
+  survol.innerHTML = vignette(p)+
+    '<div class="corps">'+
+      '<span class="statut sc" style="color:'+COUL[p.statut].c+'">'+COUL[p.statut].lab+'</span>'+
+      '<p class="adr">'+p.titre+'</p>'+
+      '<p class="arr">'+p.quartier+' — '+p.arr+'</p>'+
+      '<div class="meta"><span>'+bits.join(' · ')+'</span>'+
+        (p.prix?'<span class="prix">'+p.prix+'</span>':'')+'</div>'+
+      (p.evenement?'<p class="evt">'+p.evenement.lab+' — '+p.evenement.txt+'</p>':'')+
+    '</div>';
+  const r=plan.getBoundingClientRect();
+  let x=r.left+o.xy.x+22, y=r.top+o.xy.y-70;
+  const wC=272, hC=survol.offsetHeight||300;
+  if(x+wC>window.innerWidth-16) x=r.left+o.xy.x-wC-22;
+  y=Math.max(84,Math.min(y,window.innerHeight-hC-24));
+  survol.style.left=x+'px'; survol.style.top=y+'px';
+  survol.classList.add('on');
+  pins.forEach(q=>q.el.classList.toggle('actif',q===o));
+}
+function cacherSurvol(){
+  survol.classList.remove('on');
+  pins.forEach(q=>q.el.classList.remove('actif'));
+}
+const finPointeur = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+pins.forEach(o=>{
+  if(finPointeur){
+    o.el.addEventListener('mouseenter',()=>{clearTimeout(survolTimer);montrerSurvol(o)});
+    o.el.addEventListener('mouseleave',()=>{survolTimer=setTimeout(cacherSurvol,140)});
+    o.el.addEventListener('click',()=>allerFiche(o.p.slug));
+  }else{
+    o.el.addEventListener('click',e=>{
+      e.stopPropagation();
+      if(o.el.classList.contains('actif')) allerFiche(o.p.slug);
+      else montrerSurvol(o);
+    });
+  }
+});
+survol.addEventListener('mouseenter',()=>clearTimeout(survolTimer));
+survol.addEventListener('mouseleave',cacherSurvol);
+survol.addEventListener('click',()=>{
+  const a=pins.find(q=>q.el.classList.contains('actif'));
+  if(a) allerFiche(a.p.slug);
+});
+plan.addEventListener('click',e=>{ if(e.target===plan||e.target.closest('#geo')) cacherSurvol(); });
+
+/* =========================================================
+   6 · DÉPLACEMENT / ZOOM
+   ========================================================= */
+function redessiner(){ dessinerGeo(); placerPins(); }
+function clampVue(){
+  vue.z=Math.max(vue.zMin,Math.min(vue.zMax,vue.z));
+  const a=merc(48.800,2.230), b=merc(48.918,2.440);
+  vue.cx=Math.max(a.x,Math.min(b.x,vue.cx));
+  vue.cy=Math.max(a.y,Math.min(b.y,vue.cy));
+}
+let drag=null;
+plan.addEventListener('pointerdown',e=>{
+  if(e.target.closest('.pin')) return;
+  drag={x:e.clientX,y:e.clientY,cx:vue.cx,cy:vue.cy};
+  plan.classList.add('dragging');
+  plan.setPointerCapture(e.pointerId);
+});
+plan.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  vue.cx = drag.cx - (e.clientX-drag.x)/(ECH*vue.z);
+  vue.cy = drag.cy + (e.clientY-drag.y)/(ECH*vue.z);
+  clampVue(); redessiner();
+});
+const finDrag=()=>{drag=null;plan.classList.remove('dragging')};
+plan.addEventListener('pointerup',finDrag);
+plan.addEventListener('pointercancel',finDrag);
+plan.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const r=plan.getBoundingClientRect();
+  const sx=e.clientX-r.left-W/2, sy=e.clientY-r.top-H/2;
+  const avant=vue.z;
+  vue.z *= Math.exp(-e.deltaY*0.0016);
+  clampVue();
+  // le point sous le curseur reste sous le curseur
+  const k=1/(ECH*avant)-1/(ECH*vue.z);
+  vue.cx += sx*k; vue.cy -= sy*k;
+  clampVue(); redessiner(); cacherSurvol();
+},{passive:false});
+
+/* pincement */
+let pinch=null;
+plan.addEventListener('touchstart',e=>{
+  if(e.touches.length===2){
+    const [a,b]=e.touches;
+    pinch={d:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY),z:vue.z};
+    drag=null;
+  }
+},{passive:true});
+plan.addEventListener('touchmove',e=>{
+  if(pinch&&e.touches.length===2){
+    e.preventDefault();
+    const [a,b]=e.touches;
+    const dd=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    vue.z=pinch.z*(dd/pinch.d);
+    clampVue(); redessiner();
+  }
+},{passive:false});
+plan.addEventListener('touchend',()=>{pinch=null},{passive:true});
+
+/* =========================================================
+   7 · FICHE
+   ========================================================= */
+const fiche=document.getElementById('vue-fiche');
+const img = (ph,cls)=> ph
+  ? '<img'+(ph.plan?' class="plan-img"':'')+' src="'+ph.src+'" alt="'+(ph.lg||'')+'" loading="lazy">'
+  : '<div class="plaque"><span>Visuel à venir</span></div>';
+
+function figure(p,i,place){
+  const ph=p.photos[i];
+  return '<figure><div class="'+place+'"><div>'+img(ph)+
+    (ph&&ph.lg?'<figcaption>'+ph.lg+'</figcaption>':'')+'</div></div></figure>';
+}
+
+function frise(p){
+  const etapes=[
+    {n:'01',q:'Acquisition',e:'fait'},
+    {n:'02',q:'Études et autorisations',e:'fait'},
+    {n:'03',q:'Travaux',e:'encours'},
+    {n:'04',q:p.livraison?('Livraison — '+p.livraison):'Livraison',e:'avenir'}
+  ];
+  return '<div class="frise">'+etapes.map(e=>
+    '<div class="et '+e.e+'"><span class="n sc">'+e.n+'</span><span class="q">'+e.q+'</span></div>'
+  ).join('')+'</div>';
+}
+
+function miniplan(p){
+  const sauv={...vue};
+  const c=merc(p.ll[0],p.ll[1]);
+  vue.cx=c.x; vue.cy=c.y; vue.z=2.6;
+  const wS=W,hS=H; W=600;H=300;
+  const path=d(SEINE), ring=d(VILLE);
+  const lim=LIMITES.map(l=>'<path class="geo-limite" d="'+d(l)+'"></path>').join('');
+  const q=proj(p.ll[0],p.ll[1]);
+  W=wS;H=hS; Object.assign(vue,sauv);
+  return '<div class="miniplan" style="--c:'+COUL[p.statut].c+'">'+
+    '<svg viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice">'+
+      '<path class="geo-ville" d="'+ring+' Z"></path>'+
+      lim+
+      '<path class="geo-seine" d="'+path+'"></path>'+
+      '<circle class="mp-ring" cx="'+q.x.toFixed(1)+'" cy="'+q.y.toFixed(1)+'" r="13"></circle>'+
+      '<circle class="mp-dot" cx="'+q.x.toFixed(1)+'" cy="'+q.y.toFixed(1)+'" r="4.5"></circle>'+
+    '</svg></div>';
+}
+
+function ligne(dt,dd){ return dd?'<div class="l"><dt>'+dt+'</dt><dd>'+dd+'</dd></div>':''; }
+
+function rendreFiche(p){
+  const C=COUL[p.statut];
+  const nb=p.photos.length;
+  let gal='', cote=true;
+  if(nb===0){
+    gal=figure(p,1,'g-full');
+  }else{
+    for(let i=1;i<nb;i++){
+      const ph=p.photos[i];
+      if(ph.portrait){
+        gal+=figure(p,i, cote?'g-p-droite':'g-p-gauche'); cote=!cote;
+      }else if(ph.petite){            // définition modeste : colonne décalée
+        gal+=figure(p,i, cote?'g-droite':'g-gauche'); cote=!cote;
+      }else{
+        gal+=figure(p,i,'g-full');
+      }
+    }
+  }
+
+  fiche.innerHTML=
+  '<div class="hero" style="--c:'+C.c+'">'+
+    '<a class="retour sc" href="#carte">← Retour à la carte</a>'+
+    img(p.photos[0])+
+  '</div>'+
+  '<div class="wrap" style="--c:'+C.c+'">'+
+    '<div class="titre-bloc">'+
+      '<div>'+
+        '<span class="statut-l sc">'+C.lab+'</span>'+
+        '<h1>'+p.titre+'</h1>'+
+        '<p class="lieu">'+p.quartier+' — '+p.arr+'</p>'+
+      '</div>'+
+      (p.prix?'<div class="prix-g"><small>'+(p.prix==='Prix sur demande'?'Prix':'Prix de vente')+'</small>'+p.prix+'</div>':'')+
+    '</div>'+
+
+    (p.evenement?'<div class="evenement"><span class="lab sc">'+p.evenement.lab+'</span>'+
+       '<span class="txt">'+p.evenement.txt+'</span></div>':'')+
+
+    '<p class="chapeau">'+p.chapeau+'</p>'+
+
+    '<div class="galerie">'+gal+'</div>'+
+
+    '<section class="section"><span class="sc">Fiche technique</span>'+
+      '<dl class="specs">'+
+        ligne('Surface', p.surface ? p.surface+(p.surfaceNote?' <span style="font-family:Jost;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40)"> — '+p.surfaceNote+'</span>':'') : '')+
+        ligne('Pièces', p.pieces)+
+        ligne('Étage', p.etage)+
+        ligne('Annexes', p.annexes)+
+        ligne('Année de construction', p.annee)+
+        ligne('Diagnostic de performance énergétique', p.dpe)+
+      '</dl>'+
+    '</section>'+
+
+    (p.statut==='travaux'
+      ? '<section class="section"><span class="sc">Avancement</span>'+frise(p)+'</section>'
+      : '')+
+
+    '<section class="section"><span class="sc">Situation</span>'+miniplan(p)+
+      '<p class="coord" style="margin-top:14px">'+p.adresse+'</p>'+
+    '</section>'+
+
+    '<footer class="pied">'+
+      '<div class="deux">'+
+        '<div>'+
+          '<span class="sc" style="color:var(--ink-40);display:block;margin-bottom:12px">Renseignements et visites</span>'+
+          '<p class="coord">'+CONTACT.nom+'<br>'+
+            '<a href="mailto:'+CONTACT.email+'">'+CONTACT.email+'</a><br>'+
+            '<a href="tel:'+CONTACT.tel.replace(/\s/g,'')+'">'+CONTACT.tel+'</a></p>'+
+        '</div>'+
+        '<a class="contact-b sc" href="mailto:'+CONTACT.email+'?subject='+encodeURIComponent('Demande de renseignements — '+p.titre)+'">Nous écrire</a>'+
+      '</div>'+
+      '<a class="retour-bas sc" href="#carte">← Retour à la carte</a>'+
+      '<p class="mentions">'+
+        'Document d\'information non contractuel. Surfaces indiquées au sens de la loi Carrez, '+
+        'sous réserve des mesurages définitifs figurant aux actes. Les photographies sont indicatives ; '+
+        'certaines comportent une mise en scène virtuelle du mobilier, qui ne fait pas partie du bien vendu. '+
+        'Les prix mentionnés s\'entendent hors frais d\'acte. '+
+        'Aucun des éléments présentés ne constitue une offre de vente ni un engagement contractuel. '+
+        '© '+new Date().getFullYear()+' ALCIONE IMMOBILIER · EPONA.'+
+      '</p>'+
+    '</footer>'+
+  '</div>';
+}
+
+/* =========================================================
+   8 · ROUTAGE (#carte et #bien-<slug> — ancres simples)
+   ========================================================= */
+function allerFiche(slug){ location.hash='bien-'+slug; }
+function route(){
+  const h=(location.hash||'').replace(/^#/,'');
+  const p=h.startsWith('bien-') ? PROJETS.find(x=>x.slug===h.slice(5)) : null;
+  if(p){
+    rendreFiche(p);
+    document.body.classList.add('fiche');
+    fiche.classList.add('on');
+    fiche.scrollTop=0;
+    document.title=p.titre+' — ALCIONE · EPONA';
+  }else{
+    fiche.classList.remove('on');
+    document.body.classList.remove('fiche');
+    cacherSurvol();
+    document.title='ALCIONE · EPONA — Quatorze adresses parisiennes';
+    setTimeout(()=>{ if(!document.body.classList.contains('fiche')) fiche.innerHTML=''; },520);
+  }
+}
+window.addEventListener('hashchange',route);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ if(document.body.classList.contains('fiche')) location.hash='carte'; else cacherSurvol(); }
+});
+
+/* =========================================================
+   9 · DÉMARRAGE
+   ========================================================= */
+function init(){ mesurer(); clampVue(); redessiner(); }
+let rt=null;
+window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{init();cacherSurvol()},140)});
+construireFiltres();
+init();
+route();
 </script>
 </body>
 </html>
